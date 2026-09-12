@@ -1,0 +1,7 @@
+node_modules/
+runs/
+*.bkup
+*.log
+.DS_Store
+.claude/
+{public,uploads,scripts,outputs}/

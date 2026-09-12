@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gene Search | B-ALL RNA-Seq Classifier</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f7f8fc;
+    --surface:   #ffffff;
+    --surface2:  #f0f2f7;
+    --border:    rgba(30,80,160,0.10);
+    --border2:   rgba(30,80,160,0.18);
+    --teal:      #0e7e6e;
+    --teal-dim:  rgba(14,126,110,0.10);
+    --amber:     #c47d0e;
+    --amber-dim: rgba(196,125,14,0.10);
+    --text:      #1a202c;
+    --text-muted:#4a5568;
+    --text-dim:  #a0aec0;
+    --red:       #c0392b;
+    --font-display: 'Syne', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 19px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .page-shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topbar-logo { width: 80px; height: 80px; object-fit: contain; }
+
+  .topbar-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .topbar-label {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  .topbar-subtitle {
+    font-family: var(--font-body);
+    font-size: 21px;
+    color: var(--teal);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 56px 0 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--teal);
+    opacity: 0.6;
+  }
+
+  h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .hero-sub {
+    color: var(--text-muted);
+    font-size: 19px;
+    font-weight: 300;
+    max-width: 520px;
+    margin-bottom: 8px;
+  }
+
+  .run-meta {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  .page-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--teal);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: #12907d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(14,126,110,0.22);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-outline:hover {
+    color: var(--text);
+    border-color: rgba(30,80,160,0.32);
+    background: var(--surface2);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card.full-bleed {
+    width: calc(100vw - 32px);
+    max-width: 2200px;
+    margin-left: calc(50% - 50vw + 16px);
+    margin-right: calc(50% - 50vw + 16px);
+  }
+
+  .card.full-bleed {
+    width: calc(100vw - 32px);
+    max-width: 2200px;
+    margin-left: calc(50% - 50vw + 16px);
+    margin-right: calc(50% - 50vw + 16px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── Search input ── */
+  .search-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .gene-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .gene-input-wrap::before {
+    content: '⌖';
+    position: absolute;
+    left: 12px;
+    color: var(--teal);
+    font-size: 16px;
+    pointer-events: none;
+    opacity: 0.7;
+    z-index: 1;
+  }
+
+  #gene-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 17px;
+    padding: 9px 14px 9px 34px;
+    width: 260px;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+
+  #gene-input::placeholder { color: var(--text-dim); }
+
+  #gene-input:focus {
+    border-color: rgba(77,217,192,0.5);
+    box-shadow: 0 0 0 3px rgba(77,217,192,0.08);
+  }
+
+  /* ── Status ── */
+  #status {
+    margin: 0;
+    padding: 12px 28px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    transition: color 0.2s;
+  }
+
+  #status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+    animation: pulse 2s ease infinite;
+  }
+
+  #status.idle::before { animation: none; opacity: 0.4; }
+  #status.error { color: var(--red); }
+  #status.error::before { background: var(--red); animation: none; }
+  #status.loaded::before { background: var(--teal); animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── Chip hints ── */
+  .gene-hints {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 12px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hint-label {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--text-dim);
+    padding-top: 2px;
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--teal);
+    background: var(--teal-dim);
+    border: 1px solid rgba(77,217,192,0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+
+  .chip:hover {
+    background: rgba(77,217,192,0.25);
+    border-color: rgba(77,217,192,0.4);
+  }
+
+  /* ── Chart ── */
+  #plotly-chart {
+    padding: 0;
+    display: none;
+    min-height: 1025px;
+    width: 100%;
+  }
+
+  .overall-percentile {
+    display: none;
+    margin: 18px 28px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .overall-percentile.active {
+    display: block;
+  }
+
+  .overall-percentile strong {
+    font-family: var(--font-mono);
+    color: var(--teal);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero { animation: fadeUp 0.5s ease both; }
+  .card { animation: fadeUp 0.5s 0.1s ease both; }
+</style>
+</head>
+<body>
+<main class="page-shell">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="topbar-logo" src="/chla-logo.svg" alt="CHLA logo" />
+      <div class="topbar-copy">
+        <span class="topbar-label">CHLA | Center for PERSONALISED MEDICINE</span>
+        <span class="topbar-subtitle">B-ALL Classifier</span>
+      </div>
+    </div>
+    <a class="btn btn-outline" href="/">← Back to Pipeline</a>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">Gene Search</div>
+      <p class="hero-sub">Compare your sample against the B-ALL reference cohort for any selected gene.</p>
+      <span class="run-meta" id="run-meta">—</span>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-outline" id="umap-link" href="#">Open UMAP ↗</a>
+    </div>
+  </section>
+
+  <!-- Search card -->
+  <section class="card">
+    <div class="card-header">
+      <span class="card-title">Expression by Subtype</span>
+      <div class="search-row">
+        <div class="gene-input-wrap">
+          <input type="text" id="gene-input" placeholder="CRLF2, CDX2, PAX5…" autocomplete="off" spellcheck="false" />
+        </div>
+        <button class="btn btn-primary" id="search-btn">Search Gene</button>
+      </div>
+    </div>
+
+    <!-- Quick-access gene chips -->
+    <div class="gene-hints">
+      <span class="hint-label">Quick search:</span>
+      <span class="chip" data-gene="CRLF2">CRLF2</span>
+      <span class="chip" data-gene="CDX2">CDX2</span>
+      <span class="chip" data-gene="PAX5">PAX5</span>
+      <span class="chip" data-gene="IKZF1">IKZF1</span>
+      <span class="chip" data-gene="ETV6">ETV6</span>
+      <span class="chip" data-gene="BCR">BCR</span>
+      <span class="chip" data-gene="ABL1">ABL1</span>
+    </div>
+
+    <div id="status" class="idle">Enter a gene symbol or Ensembl ID.</div>
+    <div id="overall-percentile" class="overall-percentile"></div>
+    <div id="plotly-chart"></div>
+  </section>
+
+</main>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const runId       = params.get('runId') || '';
+const initialGene = params.get('gene')  || '';
+
+document.getElementById('run-meta').textContent = runId ? `Run ID: ${runId}` : 'Run ID missing';
+document.getElementById('umap-link').href = runId ? `/umap.html?runId=${encodeURIComponent(runId)}` : '#';
+document.getElementById('gene-input').value = initialGene;
+
+// Chip clicks
+document.querySelectorAll('.chip[data-gene]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.getElementById('gene-input').value = chip.dataset.gene;
+    searchGene();
+  });
+});
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className   = type;
+}
+
+function percentileRank(values, sampleValue) {
+  const cleanValues = values.filter(Number.isFinite);
+  if (!cleanValues.length || !Number.isFinite(sampleValue)) return null;
+  const belowOrEqual = cleanValues.filter(v => v <= sampleValue).length;
+  return (belowOrEqual / cleanValues.length) * 100;
+}
+
+function renderOverallPercentile(percentile, sampleValue, gene) {
+  const el = document.getElementById('overall-percentile');
+  if (!Number.isFinite(percentile) || !Number.isFinite(sampleValue)) {
+    el.className = 'overall-percentile';
+    el.innerHTML = '';
+    return;
+  }
+
+  el.className = 'overall-percentile active';
+  el.innerHTML = `<strong>Overall percentile:</strong> ${percentile.toFixed(1)}th across the full reference cohort for <strong>${gene}</strong> at expression ${sampleValue.toFixed(2)}.`;
+}
+
+const subtypePalette = [
+  "#6366F1", "#38BDF8", "#34D399", "#FB7185", "#FBBF24",
+  "#A78BFA", "#22D3EE", "#A3E635", "#E879F9", "#FB923C",
+  "#60A5FA", "#2DD4BF", "#4ADE80", "#F472B6", "#FDE047",
+  "#C084FC", "#94A3B8", "#FF6B6B", "#6EE7B7", "#FDBA74"
+];
+
+async function searchGene() {
+  const gene = document.getElementById('gene-input').value.trim();
+  if (!runId) return setStatus('Run ID is missing from the page URL.', 'error');
+  if (!gene)  return setStatus('Enter a gene name first.', 'error');
+
+  setStatus(`Loading ${gene}…`);
+  document.getElementById('plotly-chart').style.display = 'none';
+  renderOverallPercentile(null, null, gene);
+
+  try {
+    const resp = await fetch(`/api/search/${encodeURIComponent(runId)}/${encodeURIComponent(gene)}`);
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || resp.statusText);
+
+    const referenceRows = Array.isArray(data.reference) ? data.reference : [];
+    const subtypes = [...new Set(referenceRows.map(r => r.subtype || 'Unknown'))];
+
+    const plotData = subtypes.map(subtype => {
+      const color = subtypePalette[subtypes.indexOf(subtype) % subtypePalette.length];
+      const values = referenceRows
+        .filter(r => (r.subtype || 'Unknown') === subtype)
+        .map(r => Number(r.expression))
+        .filter(v => Number.isFinite(v));
+      return {
+        y: values, type: 'box', name: subtype,
+        boxpoints: 'all', jitter: 0.5, pointpos: 0, quartilemethod: 'linear',
+        fillcolor: `${color}22`,
+        line: { color, width: 1.7 },
+        whiskerwidth: 0.7,
+        marker: {
+          size: 6.5,
+          opacity: 0.5,
+          color,
+          line: { color: 'rgba(13,17,23,0.8)', width: 0.4 }
+        },
+        hoverinfo: 'skip',
+        hovertemplate: null
+      };
+    });
+
+    if (!plotData.length) throw new Error('No reference expression values returned for this gene.');
+
+    plotData.sort((a, b) => {
+      const med = arr => arr.slice().sort((x, y) => x - y)[Math.floor(arr.length / 2)];
+      return med(a.y) - med(b.y);
+    });
+
+    const orderedSubtypes = plotData.map(trace => trace.name);
+    const percentileRows = orderedSubtypes.map(subtype => {
+      const values = referenceRows
+        .filter(r => (r.subtype || 'Unknown') === subtype)
+        .map(r => Number(r.expression))
+        .filter(v => Number.isFinite(v));
+      const percentile = percentileRank(values, Number(data.sampleValue));
+      return {
+        subtype,
+        n: values.length,
+        percentile,
+        percentileLabel: percentile === null ? '-' : `${percentile.toFixed(1)}th`
+      };
+    });
+
+    const queryTrace = {
+      x: orderedSubtypes,
+      y: orderedSubtypes.map(() => data.sampleValue),
+      customdata: percentileRows.map(row => [row.subtype, row.percentile, row.n]),
+      mode: 'markers',
+      type: 'scatter',
+      name: 'Query sample',
+      marker: {
+        size: 11,
+        color: '#c0392b',
+        symbol: 'diamond',
+        line: { color: '#fff', width: 1.3 }
+      },
+      hoverlabel: { bgcolor: '#ffffff', bordercolor: '#c0392b', font: { color: '#1a202c' } },
+      hovertemplate:
+        '<b>Your Sample</b>' +
+        '<br>Subtype: %{customdata[0]}' +
+        '<br>Expression: %{y:.2f}' +
+        '<br>Percentile: %{customdata[1]:.1f}th' +
+        '<br>Reference N: %{customdata[2]}' +
+        '<extra></extra>'
+    };
+
+    const allValues = referenceRows.map(r => Number(r.expression)).filter(Number.isFinite);
+    const overallPercentile = percentileRank(allValues, Number(data.sampleValue));
+    const yMin = Math.min(...allValues, data.sampleValue);
+    const yMax = Math.max(...allValues, data.sampleValue);
+    const yPad = Math.max((yMax - yMin) * 0.05, 0.2);
+    const chartEl = document.getElementById('plotly-chart');
+
+    Plotly.newPlot('plotly-chart', [...plotData, queryTrace], {
+      paper_bgcolor: '#ffffff',
+      plot_bgcolor:  '#f7f8fc',
+      width: Math.min((chartEl.parentElement?.clientWidth || window.innerWidth) - 24, 1320),
+      height: 1050,
+      font: { family: "'DM Mono', monospace", color: '#4a5568', size: 16 },
+      colorway: subtypePalette,
+      title: {
+        text: `<b>${data.gene}</b> expression across reference subtypes`,
+        font: { family: "'Syne', sans-serif", color: '#1a202c', size: 24 },
+        x: 0.02,
+        xanchor: 'left'
+      },
+      yaxis: {
+        title: { text: 'VST Expression', font: { color: '#0e7e6e', size: 16 } },
+        zeroline: false,
+        gridcolor: 'rgba(30,80,160,0.07)',
+        tickfont: { color: '#718096', size: 16 },
+        linecolor: 'rgba(30,80,160,0.15)',
+        range: [
+          yMin - yPad,
+          yMax + yPad
+        ]
+      },
+      xaxis: {
+        tickangle: 45,
+        automargin: true,
+        tickfont: { color: '#4a5568', size: 15 },
+        linecolor: 'rgba(30,80,160,0.15)'
+      },
+      showlegend: false,
+      boxgap: 0.2,
+      boxgroupgap: 0.08,
+      hovermode: 'closest',
+      hoverlabel: {
+        bgcolor: '#ffffff',
+        bordercolor: 'rgba(30,80,160,0.18)',
+        font: { family: "'DM Mono', monospace", color: '#1a202c', size: 16 }
+      },
+      shapes: [{
+        type: 'line',
+        x0: -0.5, y0: data.sampleValue,
+        x1: plotData.length - 0.5, y1: data.sampleValue,
+        line: { color: '#c0392b', width: 2, dash: 'dot' }
+      }],
+      annotations: [{
+        x: 0.01, y: 1.045,
+        xref: 'paper', yref: 'paper',
+        text: `Query sample: <b>${data.sampleValue.toFixed(2)}</b>`,
+        showarrow: false,
+        bgcolor: 'rgba(192,57,43,0.08)',
+        bordercolor: 'rgba(192,57,43,0.22)',
+        borderwidth: 1,
+        borderpad: 6,
+        font: { color: '#c0392b', size: 16, family: "'DM Mono', monospace" }
+      }, {
+        x: 0, y: data.sampleValue,
+        xref: 'x', yref: 'y',
+        text: ` ${data.sampleValue.toFixed(2)} `,
+        showarrow: true, arrowhead: 2,
+        ax: 60, ay: -28,
+        bgcolor: '#c0392b',
+        borderpad: 4,
+        font: { color: '#fff', size: 16, family: "'DM Mono', monospace" }
+      }],
+      margin: { b: 112, t: 74, l: 56, r: 18 }
+    }, {
+      responsive: true,
+      displaylogo: false,
+      modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d']
+    });
+
+    document.getElementById('plotly-chart').style.display = 'block';
+    renderOverallPercentile(overallPercentile, Number(data.sampleValue), data.gene);
+    setStatus(`Showing ${data.gene} for sample ${data.sampleId}.`, 'loaded');
+    history.replaceState(null, '', `/gene-search.html?runId=${encodeURIComponent(runId)}&gene=${encodeURIComponent(gene)}`);
+  } catch (err) {
+    setStatus(err.message, 'error');
+  }
+}
+
+document.getElementById('search-btn').addEventListener('click', searchGene);
+document.getElementById('gene-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchGene();
+});
+
+if (runId && initialGene) searchGene();
+</script>
+</body>
+</html>

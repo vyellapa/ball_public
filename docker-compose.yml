@@ -1,0 +1,26 @@
+services:
+  ball-classifier:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+    image: ball-classifier:latest
+    platform: linux/amd64
+    ports:
+      - "3000:3000"
+    volumes:
+      # Uploaded quant.sf files, pipeline outputs and run history persist here.
+      - ball-runs:/app/runs
+    environment:
+      PORT: "3000"
+      # GTF_FILE: /app/resources/gtf1.txt   # default; mount your own to override
+      # APP_PASSWORD: change-me             # uncomment to require a login on every page
+    restart: unless-stopped
+    # MDALL loads a ~1800-sample reference into memory per run; give it headroom.
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+
+volumes:
+  ball-runs:

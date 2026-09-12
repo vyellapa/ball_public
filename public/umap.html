@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UMAP Projection | B-ALL RNA-Seq Classifier</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f7f8fc;
+    --surface:   #ffffff;
+    --surface2:  #f0f2f7;
+    --border:    rgba(30,80,160,0.10);
+    --border2:   rgba(30,80,160,0.18);
+    --teal:      #0e7e6e;
+    --teal-dim:  rgba(14,126,110,0.10);
+    --amber:     #c47d0e;
+    --amber-dim: rgba(196,125,14,0.10);
+    --text:      #1a202c;
+    --text-muted:#4a5568;
+    --text-dim:  #a0aec0;
+    --red:       #c0392b;
+    --font-display: 'Syne', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 19px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .page-shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+  }
+
+  /* ── Header bar ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topbar-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+  }
+
+  .topbar-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .topbar-label {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  .topbar-subtitle {
+    font-family: var(--font-body);
+    font-size: 21px;
+    color: var(--teal);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 56px 0 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--teal);
+    opacity: 0.6;
+  }
+
+  h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .hero-sub {
+    color: var(--text-muted);
+    font-size: 19px;
+    font-weight: 300;
+    max-width: 480px;
+    margin-bottom: 8px;
+  }
+
+  .run-meta {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  /* ── Buttons ── */
+  .page-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--teal);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: #12907d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(14,126,110,0.22);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-outline:hover {
+    color: var(--text);
+    border-color: rgba(30,80,160,0.32);
+    background: var(--surface2);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+    gap: 20px;
+    padding: 18px;
+  }
+
+  .plot-panel {
+    min-width: 0;
+  }
+
+  .results-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .results-header {
+    padding: 14px 16px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal);
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.7);
+  }
+
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+
+  .results-table th,
+  .results-table td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .results-table th {
+    width: 46%;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .results-table td {
+    color: var(--text);
+  }
+
+  .results-empty {
+    padding: 16px;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+
+  /* ── Status badge ── */
+  #status {
+    margin: 0;
+    padding: 12px 28px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+
+  #status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+    animation: pulse 2s ease infinite;
+  }
+
+  #status.error { color: var(--red); }
+  #status.error::before { background: var(--red); animation: none; }
+  #status.loaded::before { background: var(--teal); animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── Chart area ── */
+  #umap-chart {
+    padding: 8px;
+    display: none;
+    min-height: 900px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ── Plotly override ── */
+  .js-plotly-plot .plotly .modebar {
+    background: transparent !important;
+  }
+
+  /* ── Fade-in ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero    { animation: fadeUp 0.5s ease both; }
+  .card    { animation: fadeUp 0.5s 0.1s ease both; }
+
+  @media (max-width: 1100px) {
+    .analysis-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="page-shell">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="topbar-logo" src="/chla-logo.svg" alt="CHLA logo" />
+      <div class="topbar-copy">
+        <span class="topbar-label">CHLA | Center for PERSONALISED MEDICINE</span>
+        <span class="topbar-subtitle">B-ALL Classifier</span>
+      </div>
+    </div>
+    <a class="btn btn-outline" href="/">← Back to Pipeline</a>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">UMAP Projection</div>
+      <p class="hero-sub">Project the query sample against the B-ALL reference cohort embedding.</p>
+      <span class="run-meta" id="run-meta">—</span>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-outline" id="gene-link" href="#">Open Gene Search ↗</a>
+    </div>
+  </section>
+
+  <!-- Chart card -->
+  <section class="card">
+    <div class="card-header">
+      <span class="card-title">PhenoGraph UMAP</span>
+      <div class="controls">
+        <button class="btn btn-primary" id="reload-btn">↺ Reload Projection</button>
+      </div>
+    </div>
+    <div id="status">Initialising embedding…</div>
+    <div class="analysis-grid">
+      <div class="plot-panel">
+        <div id="umap-chart"></div>
+      </div>
+      <aside class="results-panel">
+        <div class="results-header">BALL Final Calls</div>
+        <div id="final-calls-table" class="results-empty">Waiting for run results…</div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const runId  = params.get('runId') || '';
+
+document.getElementById('run-meta').textContent  = runId ? `Run ID: ${runId}` : 'Run ID missing';
+document.getElementById('gene-link').href = runId ? `/gene-search.html?runId=${encodeURIComponent(runId)}` : '#';
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className   = type; // '', 'error', 'loaded'
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function displayValue(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  return String(value);
+}
+
+function renderFinalCallsTable(rows) {
+  const container = document.getElementById('final-calls-table');
+  if (!Array.isArray(rows) || !rows.length) {
+    container.className = 'results-empty';
+    container.textContent = 'No BALL final calls data was returned for this run.';
+    return;
+  }
+
+  const row = rows[0];
+  const fields = [
+    ['Sample ID', row.sample_id],
+    ['Final Class', row.final_class],
+    ['Final Confidence', row.final_conf],
+    ['Terminal Class', row.final_terminal_class]
+  ];
+
+  container.className = '';
+  container.innerHTML = `
+    <table class="results-table">
+      <tbody>
+        ${fields.map(([label, value]) => `
+          <tr>
+            <th>${escapeHtml(label)}</th>
+            <td>${escapeHtml(displayValue(value))}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+const subtypePalette = [
+  "#6366F1", "#38BDF8", "#34D399", "#FB7185", "#FBBF24",
+  "#A78BFA", "#22D3EE", "#A3E635", "#E879F9", "#FB923C",
+  "#60A5FA", "#2DD4BF", "#4ADE80", "#F472B6", "#FDE047",
+  "#C084FC", "#94A3B8", "#FF6B6B", "#6EE7B7", "#FDBA74"
+];
+
+async function loadUmap() {
+  if (!runId) return setStatus('Run ID is missing from the page URL.', 'error');
+  setStatus('Loading embedding…');
+  document.getElementById('umap-chart').style.display = 'none';
+
+  try {
+    const resp = await fetch(`/api/umap/${encodeURIComponent(runId)}`);
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || resp.statusText);
+
+    const umapRows = Array.isArray(data) ? data : (Array.isArray(data.umap) ? data.umap : []);
+    const refData   = umapRows.filter(d => !d.is_query);
+    const query     = umapRows.find(d => d.is_query);
+    const finalCalls = Array.isArray(data.finalCalls) && data.finalCalls.length
+      ? data.finalCalls
+      : (query ? [{
+          sample_id: query.sample_id,
+          final_class: query.final_class,
+          final_conf: query.final_conf,
+          final_terminal_class: query.final_terminal_class || query.final_class || 'NA'
+        }] : []);
+    renderFinalCallsTable(finalCalls);
+
+    const subtypeOf = r => r.diag || r.subtype || 'Unknown';
+    const subtypes  = [...new Set(refData.map(subtypeOf))];
+    const allPoints = umapRows.filter(d => Number.isFinite(d.uMAP_1) && Number.isFinite(d.uMAP_2));
+    const xVals = allPoints.map(d => Number(d.uMAP_1));
+    const yVals = allPoints.map(d => Number(d.uMAP_2));
+    const xMin = Math.min(...xVals);
+    const xMax = Math.max(...xVals);
+    const yMin = Math.min(...yVals);
+    const yMax = Math.max(...yVals);
+    const xPad = Math.max((xMax - xMin) * 0.06, 0.35);
+    const yPad = Math.max((yMax - yMin) * 0.06, 0.35);
+
+    const plotData = subtypes.map(subtype => {
+      const color = subtypePalette[subtypes.indexOf(subtype) % subtypePalette.length];
+      const sub = refData.filter(r => subtypeOf(r) === subtype);
+      return {
+        x: sub.map(r => r.uMAP_1),
+        y: sub.map(r => r.uMAP_2),
+        mode: 'markers', type: 'scatter',
+        name: subtype,
+        hoverinfo: 'skip',
+        marker: {
+          size: 12,
+          opacity: 0.62,
+          color,
+          line: { color: 'rgba(13,17,23,0.45)', width: 0.5 }
+        },
+        hoverlabel: { bgcolor: '#ffffff', bordercolor: color, font: { color: '#1a202c' } }
+      };
+    });
+
+    if (query) {
+      plotData.push({
+        x: [query.uMAP_1], y: [query.uMAP_2],
+        mode: 'markers', type: 'scatter',
+        name: '<b>TEST SAMPLE</b>',
+        text: [query.sample_id || 'Query sample'],
+        customdata: [[
+          subtypeOf(query),
+          query.final_class || 'NA',
+          query.mdall_call || 'NA',
+          Number.isFinite(query.mdall_score) ? query.mdall_score : null,
+          query.allcatcher_call || 'NA',
+          query.allcatcher_terminal || query.allcatcher_call || 'NA',
+          Number.isFinite(query.allcatcher_score) ? query.allcatcher_score : null,
+          query.allsorts_call || 'NA',
+          query.allsorts_terminal || query.allsorts_call || 'NA',
+          Number.isFinite(query.allsorts_score) ? query.allsorts_score : null
+        ]],
+        marker: {
+          size: 14,
+          color: '#c0392b',
+          symbol: 'star-diamond',
+          line: { color: '#fff', width: 2.2 }
+        },
+        hoverlabel: { bgcolor: '#ffffff', bordercolor: '#c0392b', font: { color: '#1a202c' } },
+        hovertemplate:
+          '<b>%{text}</b>' +
+          '<br>Assigned subtype: %{customdata[0]}' +
+          '<br>Final class: %{customdata[1]}' +
+          '<br>MD-ALL: %{customdata[2]} | subtype %{customdata[2]} | score %{customdata[3]:.3f}' +
+          '<br>ALLCatcher: %{customdata[4]} | subtype %{customdata[5]} | score %{customdata[6]:.3f}' +
+          '<br>ALLSorts: %{customdata[7]} | subtype %{customdata[8]} | score %{customdata[9]:.3f}' +
+          '<br>uMAP 1: %{x:.2f}<br>uMAP 2: %{y:.2f}<extra></extra>'
+      });
+    }
+
+    const plotHost = document.querySelector('.plot-panel');
+    const plotWidth = Math.max(Math.min((plotHost?.clientWidth || window.innerWidth) - 16, 920), 720);
+
+    Plotly.newPlot('umap-chart', plotData, {
+      paper_bgcolor: '#ffffff',
+      plot_bgcolor:  '#f7f8fc',
+      width: plotWidth,
+      height: 900,
+      colorway: subtypePalette,
+      hovermode: 'closest',
+      font: { family: "'DM Mono', monospace", color: '#4a5568', size: 16 },
+      title: {
+        text: '<b>Reference Cohort Projection</b>',
+        font: { family: "'Syne', sans-serif", color: '#1a202c', size: 24 },
+        x: 0.02,
+        xanchor: 'left',
+        pad: { t: 8, b: 8 }
+      },
+      xaxis: {
+        title: { text: 'uMAP 1', font: { color: '#0e7e6e', size: 16 } },
+        zeroline: false,
+        gridcolor: 'rgba(30,80,160,0.07)',
+        tickfont: { color: '#718096', size: 16 },
+        linecolor: 'rgba(30,80,160,0.15)',
+        range: [xMin - xPad, xMax + xPad],
+        showspikes: true,
+        spikecolor: 'rgba(14,126,110,0.25)',
+        spikethickness: 1
+      },
+      yaxis: {
+        title: { text: 'uMAP 2', font: { color: '#0e7e6e', size: 16 } },
+        zeroline: false,
+        gridcolor: 'rgba(30,80,160,0.07)',
+        tickfont: { color: '#718096', size: 16 },
+        linecolor: 'rgba(30,80,160,0.15)',
+        range: [yMin - yPad, yMax + yPad],
+        showspikes: true,
+        spikecolor: 'rgba(14,126,110,0.25)',
+        spikethickness: 1
+      },
+      legend: {
+        itemsizing: 'constant',
+        orientation: 'h',
+        x: 0,
+        y: -0.16,
+        bgcolor: 'rgba(255,255,255,0.95)',
+        bordercolor: 'rgba(30,80,160,0.15)',
+        borderwidth: 1,
+        font: { size: 16 }
+      },
+      annotations: query ? [{
+        x: query.uMAP_1,
+        y: query.uMAP_2,
+        xref: 'x',
+        yref: 'y',
+        text: ` ${query.final_class || subtypeOf(query)} `,
+        showarrow: true,
+        arrowhead: 2,
+        arrowcolor: '#c0392b',
+        arrowwidth: 1,
+        ax: 42,
+        ay: -32,
+        bgcolor: 'rgba(192,57,43,0.95)',
+        bordercolor: '#fff',
+        borderwidth: 1,
+        font: { color: '#fff', size: 16, family: "'DM Mono', monospace" }
+      }] : [],
+      margin: { t: 88, b: 140, l: 56, r: 28 }
+    }, {
+      responsive: true,
+      displaylogo: false,
+      modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d']
+    });
+
+    document.getElementById('umap-chart').style.display = 'block';
+    setStatus(`Loaded ${refData.length + (query ? 1 : 0)} points.`, 'loaded');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  }
+}
+
+document.getElementById('reload-btn').addEventListener('click', loadUmap);
+loadUmap();
+</script>
+</body>
+</html>

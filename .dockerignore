@@ -1,0 +1,12 @@
+node_modules
+runs
+.git
+.claude
+*.bkup
+*.log
+.DS_Store
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
+{public,uploads,scripts,outputs}

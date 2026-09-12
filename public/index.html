@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>B-ALL RNA-Seq Classifier</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#f7f8fc; --surface:#ffffff; --surface2:#f0f2f7;
+    --border:rgba(30,80,160,0.10); --border2:rgba(30,80,160,0.18);
+    --teal:#0e7e6e; --text:#1a202c; --text-muted:#4a5568; --text-dim:#a0aec0;
+    --red:#c0392b; --green:#0f766e;
+    --font-display:'Syne',sans-serif; --font-body:'DM Sans',sans-serif; --font-mono:'DM Mono',monospace;
+  }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:18px; line-height:1.6; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(var(--border) 1px, transparent 1px),linear-gradient(90deg,var(--border) 1px, transparent 1px); background-size:48px 48px; pointer-events:none; z-index:0; opacity:.4; }
+  .page-shell { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:0 32px 80px; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:20px 0 0; border-bottom:1px solid var(--border); }
+  .topbar-brand { display:flex; align-items:center; gap:10px; }
+  .topbar-logo { width:80px; height:80px; object-fit:contain; }
+  .topbar-copy { display:flex; flex-direction:column; gap:2px; }
+  .topbar-label, label, .picker-label { font-family:var(--font-mono); font-size:19px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); }
+  .topbar-subtitle { font-family:var(--font-body); font-size:20px; color:var(--teal); }
+  .hero { padding:56px 0 40px; display:grid; grid-template-columns:1fr auto; gap:24px; align-items:end; border-bottom:1px solid var(--border); margin-bottom:36px; }
+  .hero-copy { max-width:720px; }
+  .eyebrow { font-family:var(--font-mono); font-size:14px; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--teal); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:''; display:inline-block; width:20px; height:1px; background:var(--teal); opacity:.6; }
+  h1 { font-family:var(--font-mono); font-size:clamp(34px,5vw,56px); font-weight:500; line-height:1.05; letter-spacing:-.02em; color:var(--text); margin-bottom:12px; }
+  .hero-sub, .helper-text { color:var(--text-muted); }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:28px; }
+  .card-title { display:flex; align-items:center; gap:10px; padding:20px 28px; border-bottom:1px solid var(--border); font-family:var(--font-display); font-size:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
+  .badge, .pill { display:inline-flex; align-items:center; border-radius:999px; padding:2px 10px; font-family:var(--font-mono); font-size:14px; background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
+  form { padding:24px 28px 28px; }
+  .upload-grid,.options-row { display:grid; gap:16px; }
+  .upload-grid.full { grid-template-columns:1fr; } .options-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .drop-zone { border:1px dashed var(--border2); border-radius:12px; padding:24px 16px; text-align:center; cursor:pointer; transition:all .2s; position:relative; background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(240,242,247,.75)); }
+  .drop-zone:hover,.drop-zone.dragover { border-color:rgba(14,126,110,.35); background:rgba(14,126,110,.05); }
+  .drop-zone.has-file { border-color:rgba(14,126,110,.42); background:rgba(14,126,110,.08); }
+  .drop-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .dz-icon { font-size:2rem; margin-bottom:8px; } .dz-label { font-size:1.1375rem; font-weight:600; color:var(--text); margin-bottom:4px; } .dz-hint { font-size:1.0075rem; color:var(--text-muted); } .dz-filename { font-size:.9675rem; color:var(--teal); font-weight:600; margin-top:8px; word-break:break-all; }
+  .section-sep { height:1px; background:var(--border); margin:24px 0; }
+  label { display:block; margin-bottom:8px; color:var(--text-muted); }
+  input[type=text],input[type=number] { width:100%; border:1px solid var(--border2); background:var(--surface2); border-radius:6px; padding:11px 12px; font-family:var(--font-mono); color:var(--text); outline:none; }
+  input:focus { border-color:rgba(14,126,110,.35); box-shadow:0 0 0 3px rgba(14,126,110,.07); }
+  .btn,.button { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 20px; font-family:var(--font-mono); font-size:15px; font-weight:500; letter-spacing:.06em; border-radius:6px; border:none; cursor:pointer; text-decoration:none; transition:all .18s ease; white-space:nowrap; }
+  .btn-primary,.button:not(.button-outline) { background:var(--teal); color:#fff; }
+  .btn-primary:hover,.button:not(.button-outline):hover { background:#12907d; transform:translateY(-1px); box-shadow:0 4px 20px rgba(14,126,110,.22); }
+  .btn-outline,.button-outline { background:transparent; color:var(--text-muted); border:1px solid var(--border2); }
+  .btn-outline:hover,.button-outline:hover { color:var(--text); border-color:rgba(30,80,160,.32); background:var(--surface2); }
+  #progress-panel,#interactive-panel,#history-panel { display:none; }
+  .status-wrap { padding:18px 28px 0; }
+  .status-bar { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:999px; font-family:var(--font-mono); font-size:.9875rem; border:1px solid var(--border); background:var(--surface2); color:var(--text-muted); width:fit-content; }
+  .status-bar.running { color:var(--teal); } .status-bar.completed { color:var(--green); } .status-bar.failed { color:var(--red); }
+  .status-bar.interrupted { color:#b7791f; }
+  .spinner { width:16px; height:16px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .log-box { margin:18px 28px 0; background:#fff; border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-family:var(--font-mono); font-size:.9475rem; color:#4a5568; max-height:260px; overflow-y:auto; line-height:1.7; white-space:pre-wrap; word-break:break-all; }
+  .downloads { display:flex; flex-wrap:wrap; gap:10px; margin:16px 28px 28px; }
+  .dl-btn { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:.9875rem; font-family:var(--font-mono); color:var(--text); text-decoration:none; }
+  .analysis-actions { display:flex; gap:12px; flex-wrap:wrap; padding:0 28px 28px; }
+  .analysis-copy { padding:20px 28px 12px; color:var(--text-muted); font-size:1.1075rem; }
+  .history-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .history-actions .btn { padding:6px 10px; font-size:.82rem; }
+  .history-picker { padding:24px 28px 28px; display:grid; gap:16px; }
+  .picker-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
+  .picker-help { color:var(--text-muted); font-size:.95rem; }
+  .selected-run { display:none; border:1px solid var(--border); background:var(--surface2); border-radius:10px; padding:16px 18px; }
+  .selected-run.active { display:grid; gap:12px; }
+  .selected-run-name { font-weight:600; color:var(--text); }
+  .selected-run-meta { color:var(--text-dim); font-size:.9rem; }
+  .selected-run-downloads { display:flex; flex-wrap:wrap; gap:8px; }
+  .picker-empty { color:var(--text-dim); font-size:.95rem; }
+  @media (max-width:820px) { .hero,.options-row { grid-template-columns:1fr; } .page-shell { padding:0 18px 48px; } }
+</style>
+</head>
+<body>
+<main class="page-shell">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="topbar-logo" src="/chla-logo.svg" alt="CHLA logo" />
+      <div class="topbar-copy">
+        <span class="topbar-label">CHLA | Center for PERSONALISED MEDICINE</span>
+        <span class="topbar-subtitle">B-ALL Classifier</span>
+      </div>
+    </div>
+  </div>
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">B-ALL RNA-Seq Classifier</span>
+    </div>
+  </section>
+
+  <!-- ── Upload Card ── -->
+  <section class="card">
+    <div class="card-title">📂 Upload Files <span class="badge">Step 1</span></div>
+
+    <form id="upload-form" enctype="multipart/form-data">
+
+      <!-- quant.sf – full width -->
+      <div class="upload-grid full" style="margin-bottom:16px">
+        <div class="drop-zone" id="dz-quant"
+          ondragover="onDrag(event,true,'dz-quant')" ondragleave="onDrag(event,false,'dz-quant')"
+          ondrop="onDrop(event,'quant-input','dz-quant')">
+          <input type="file" id="quant-input" name="quantSf" accept=".sf"
+                 onchange="onFileChosen(this,'dz-quant','dz-quant-name')">
+          <div class="dz-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-upload"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M12 11v6" /><path d="M9.5 13.5l2.5 -2.5l2.5 2.5" /></svg>
+          </div>
+          <div class="dz-label">quant.sf &nbsp;<span style="color:var(--error)">*</span></div>
+          <div class="dz-hint">Salmon / Dragen gene-level quantification file</div>
+          <div class="dz-filename" id="dz-quant-name"></div>
+        </div>
+      </div>
+
+      <!-- GTF override – full width -->
+      <div class="upload-grid full" style="margin-bottom:16px">
+        <div class="drop-zone" id="dz-gtf"
+          ondragover="onDrag(event,true,'dz-gtf')" ondragleave="onDrag(event,false,'dz-gtf')"
+          ondrop="onDrop(event,'gtf-input','dz-gtf')">
+          <input type="file" id="gtf-input" name="gtfFile" accept=".txt,.gtf,.csv"
+                 onchange="onFileChosen(this,'dz-gtf','dz-gtf-name')">
+          <div class="dz-icon">🗺️</div>
+          <div class="dz-label">Gene name mapping file <span style="color:var(--muted)">(optional – uses server default)</span></div>
+          <div class="dz-hint">Example format:<br><code>gene_id,gene_name</code><br><code>1,ENSG00000223972.5,DDX11L1</code><br><code>2,ENSG00000227232.5,WASH7P</code></div>
+          <div class="dz-filename" id="dz-gtf-name"></div>
+        </div>
+      </div>
+
+      <div class="section-sep"></div>
+
+      <div class="card-title" style="padding:0; border:0; margin-top:18px; margin-bottom:12px; font-size:.88rem;">⚙️ Run Options</div>
+      <div class="options-row">
+        <div>
+          <label>Run Label</label>
+          <input type="text" name="runLabel" id="run-label" placeholder="e.g. patient_001" />
+        </div>
+        <div>
+          <label>Low Confidence Threshold</label>
+          <input type="number" name="lowConf" value="0.4" min="0" max="1" step="0.05" />
+        </div>
+        <div>
+          <label>High Confidence Threshold</label>
+          <input type="number" name="highConf" value="0.8" min="0" max="1" step="0.05" />
+        </div>
+      </div>
+      <p class="helper-text">
+        Runs <strong>bll_v3.R</strong> to generate ALL-Catcher, ALLSorts, and MD-ALL outputs, then
+        <strong>BALL_classifier_postProcess_v5.R</strong> to merge those generated calls.
+      </p>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:24px; width:100%;">Run Classification Pipeline</button>
+    </form>
+  </section>
+
+  <!-- ── Progress Card ── -->
+  <section class="card" id="progress-panel">
+    <div class="card-title">📡 Pipeline Progress <span class="badge" id="progress-badge">—</span></div>
+    <div class="status-wrap">
+      <div class="status-bar queued" id="status-bar">
+        <span id="status-icon">⏳</span>
+        <span id="status-text">Waiting…</span>
+      </div>
+    </div>
+    <div class="log-box" id="log-box"></div>
+    <div class="downloads" id="downloads"></div>
+  </section>
+
+  <!-- ── Interactive Analysis Card ── -->
+  <section class="card" id="interactive-panel">
+    <div class="card-title">🧬 Interactive Analysis</div>
+    <p class="analysis-copy">
+      Open dedicated pages for gene-expression search and UMAP projection for the completed run.
+    </p>
+    <div class="analysis-actions">
+      <button class="btn btn-outline" onclick="openGeneSearch()">Open Gene Search</button>
+      <button class="btn btn-outline" onclick="openUmap()">Open UMAP Projection</button>
+    </div>
+  </section>
+
+  <!-- ── History Card ── -->
+  <section class="card" id="history-panel">
+    <div class="card-title">🗂️ Previous Runs</div>
+    <div class="history-picker">
+      <div class="picker-row">
+        <div>
+          <label class="picker-label" for="run-picker">Search By Sample Name</label>
+          <input type="text" id="run-picker" list="run-options" placeholder="Start typing a sample name…" autocomplete="off" />
+          <datalist id="run-options"></datalist>
+        </div>
+        <button class="btn btn-outline" type="button" id="clear-run-picker">Clear</button>
+      </div>
+      <div id="selected-run" class="selected-run"></div>
+      <div id="picker-empty" class="picker-empty">No previous runs loaded yet.</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ── Drag & Drop ───────────────────────────────────────────────────────────────
+function onDrag(e, active, dzId) {
+  e.preventDefault();
+  document.getElementById(dzId).classList.toggle('dragover', active);
+}
+function onDrop(e, inputId, dzId) {
+  e.preventDefault();
+  document.getElementById(dzId).classList.remove('dragover');
+  const dt = e.dataTransfer;
+  if (dt?.files.length) {
+    const container = new DataTransfer();
+    container.items.add(dt.files[0]);
+    const input = document.getElementById(inputId);
+    input.files = container.files;
+    input.dispatchEvent(new Event('change'));
+  }
+}
+function onFileChosen(input, dzId, nameId) {
+  document.getElementById(dzId).classList.toggle('has-file', !!(input.files?.length));
+  document.getElementById(nameId).textContent = input.files?.[0] ? '✓ ' + input.files[0].name : '';
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let pollTimer    = null;
+let activeRunId  = null;
+let previousRuns = [];
+
+// ── Form submit ───────────────────────────────────────────────────────────────
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!document.getElementById('quant-input').files?.[0]) return alert('Please select a quant.sf file.');
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Uploading…';
+
+  try {
+    const resp = await fetch('/upload', { method: 'POST', body: new FormData(e.target) });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      alert('Upload error: ' + (data.error || resp.statusText));
+      btn.disabled = false; btn.textContent = '🚀 Run Classification Pipeline';
+      return;
+    }
+
+    activeRunId = data.runId;
+    showProgress();
+    startPolling(data.runId);
+
+    btn.textContent = '✔ Submitted';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '🚀 Run Classification Pipeline'; }, 3000);
+
+  } catch (err) {
+    alert('Network error: ' + err.message);
+    btn.disabled = false; btn.textContent = '🚀 Run Classification Pipeline';
+  }
+});
+
+// ── Progress panel helpers ────────────────────────────────────────────────────
+function showProgress() {
+  document.getElementById('progress-panel').style.display = 'block';
+  document.getElementById('interactive-panel').style.display = 'none';
+  document.getElementById('log-box').textContent = '';
+  document.getElementById('downloads').innerHTML = '';
+  setStatus('queued');
+}
+
+function setStatus(status) {
+  const bar  = document.getElementById('status-bar');
+  const icon = document.getElementById('status-icon');
+  const text = document.getElementById('status-text');
+  const badge= document.getElementById('progress-badge');
+  bar.className = 'status-bar ' + status;
+  badge.textContent = status;
+  if (status === 'running')   { icon.innerHTML='<span class="spinner"></span>'; text.textContent='Running pipeline…'; }
+  else if (status === 'completed') { icon.textContent='✅'; text.textContent='Pipeline completed successfully'; }
+  else if (status === 'failed')    { icon.textContent='❌'; text.textContent='Pipeline failed – see log below'; }
+  else if (status === 'interrupted') { icon.textContent='⚠️'; text.textContent='Run was interrupted by a server restart'; }
+  else                             { icon.textContent='⏳'; text.textContent='Queued…'; }
+}
+
+function renderDownloads(runId, files) {
+  const dl = document.getElementById('downloads');
+  dl.innerHTML = '';
+  if (!files?.length) return;
+  const h = document.createElement('p');
+  h.style.cssText = 'width:100%;font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:4px;';
+  h.textContent = '⬇ Download Output Files';
+  dl.appendChild(h);
+  files.forEach(f => {
+    const a = document.createElement('a');
+    a.className = 'dl-btn';
+    a.href = `/download/${runId}/${encodeURIComponent(f)}`;
+    a.download = f;
+    const icon = f.startsWith('B-ALL_final') ? '🏆' : f.startsWith('B-ALL_merged') ? '🔗' : f.startsWith('MDall') ? '🧠' : '📄';
+    a.innerHTML = `<span>${icon}</span>${f}`;
+    dl.appendChild(a);
+  });
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+function startPolling(runId) {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const resp = await fetch(`/status/${runId}`);
+      const job  = await resp.json();
+      setStatus(job.status);
+      document.getElementById('log-box').textContent = (job.log || []).join('\n');
+      document.getElementById('log-box').scrollTop = 9999;
+      if (job.error) document.getElementById('log-box').textContent += '\n\nERROR: ' + job.error;
+      if (job.status === 'completed') {
+        renderDownloads(runId, job.outputs);
+        document.getElementById('interactive-panel').style.display = 'block';
+        clearInterval(pollTimer);
+        loadHistory();
+      }
+      if (job.status === 'failed' || job.status === 'interrupted') { clearInterval(pollTimer); loadHistory(); }
+    } catch {}
+  }, 2000);
+}
+
+function openGeneSearch(runId = activeRunId) {
+  if (!runId) return;
+  window.location.href = `/gene-search.html?runId=${encodeURIComponent(runId)}`;
+}
+
+function openUmap(runId = activeRunId) {
+  if (!runId) return;
+  window.location.href = `/umap.html?runId=${encodeURIComponent(runId)}`;
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function runSearchLabel(run) {
+  const primary = run.sampleName || run.label || run.runId;
+  const secondary = run.label && run.label !== primary ? ` | ${run.label}` : '';
+  return `${primary}${secondary}`;
+}
+
+function findRunBySearch(value) {
+  const needle = String(value || '').trim().toLowerCase();
+  if (!needle) return null;
+  return previousRuns.find(run =>
+    [run.sampleName, run.label, run.runId]
+      .filter(Boolean)
+      .some(field => field.toLowerCase() === needle)
+  ) || null;
+}
+
+function renderSelectedRun(run) {
+  const panel = document.getElementById('selected-run');
+  const empty = document.getElementById('picker-empty');
+
+  if (!run) {
+    panel.className = 'selected-run';
+    panel.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = previousRuns.length
+      ? 'Choose a sample from previous runs.'
+      : 'No previous runs loaded yet.';
+    return;
+  }
+
+  const dlLinks = (run.outputs || []).map(f =>
+    `<a class="dl-btn" style="padding:4px 10px;font-size:.72rem" href="/download/${run.runId}/${encodeURIComponent(f)}" download="${f}">⬇ ${f}</a>`
+  ).join('');
+  const analysisLinks = [
+    run.hasGeneSearch ? `<button class="btn btn-outline" type="button" onclick="openGeneSearch('${run.runId}')">Gene Search</button>` : '',
+    run.hasUmap ? `<button class="btn btn-outline" type="button" onclick="openUmap('${run.runId}')">UMAP</button>` : ''
+  ].filter(Boolean).join('');
+
+  panel.className = 'selected-run active';
+  panel.innerHTML = `
+    <div>
+      <div class="selected-run-name">${run.sampleName || run.label || run.runId}</div>
+      <div class="selected-run-meta">Run ID: ${run.runId}</div>
+      <div class="selected-run-meta">Started: ${new Date(run.startedAt).toLocaleString()}</div>
+      <div class="selected-run-meta">Status: ${run.status}</div>
+    </div>
+    <div class="history-actions">${analysisLinks || '<span class="picker-empty">No analysis views available for this run.</span>'}</div>
+    <div class="selected-run-downloads">${dlLinks || '<span class="picker-empty">No downloadable outputs found.</span>'}</div>
+  `;
+  empty.style.display = 'none';
+}
+
+async function loadHistory() {
+  try {
+    const runs = await (await fetch('/runs')).json();
+    if (!runs.length) return;
+    previousRuns = runs;
+    document.getElementById('history-panel').style.display = 'block';
+    const options = document.getElementById('run-options');
+    options.innerHTML = runs.map(r =>
+      `<option value="${(r.sampleName || r.label || r.runId).replace(/"/g, '&quot;')}">${runSearchLabel(r).replace(/</g, '&lt;')}</option>`
+    ).join('');
+    renderSelectedRun(null);
+  } catch {}
+}
+
+document.getElementById('run-picker').addEventListener('input', (e) => {
+  const value = e.target.value;
+  const exact = findRunBySearch(value);
+  if (exact) {
+    renderSelectedRun(exact);
+    return;
+  }
+
+  const needle = value.trim().toLowerCase();
+  if (!needle) {
+    renderSelectedRun(null);
+    return;
+  }
+
+  const firstMatch = previousRuns.find(run =>
+    [run.sampleName, run.label, run.runId]
+      .filter(Boolean)
+      .some(field => field.toLowerCase().includes(needle))
+  );
+
+  if (firstMatch) {
+    renderSelectedRun(firstMatch);
+  } else {
+    const panel = document.getElementById('selected-run');
+    const empty = document.getElementById('picker-empty');
+    panel.className = 'selected-run';
+    panel.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'No matching sample name was found.';
+  }
+});
+
+document.getElementById('clear-run-picker').addEventListener('click', () => {
+  document.getElementById('run-picker').value = '';
+  renderSelectedRun(null);
+});
+
+loadHistory();
+</script>
+</body>
+</html>
