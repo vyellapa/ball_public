@@ -158,8 +158,10 @@ function hydrateJobsFromDisk() {
 }
 
 // Optional password gate. Set APP_PASSWORD (and optionally APP_USER, default "admin")
-// to require HTTP basic auth on every route, including static files and downloads.
-// Leave APP_PASSWORD unset for an open instance (e.g. behind your own SSO proxy).
+// to require a login for every route, including static files and downloads.
+// Browsers get a login page that sets a session cookie (works inside the Hugging Face
+// Space iframe, where basic-auth dialogs are suppressed); scripts can still use
+// HTTP basic auth. Leave APP_PASSWORD unset for an open instance behind your own SSO.
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const APP_USER     = process.env.APP_USER || 'admin';
 // Fail closed on Hugging Face: Spaces set SPACE_ID in the environment. Never serve
@@ -171,14 +173,58 @@ if (process.env.SPACE_ID && !APP_PASSWORD) {
 }
 if (APP_PASSWORD) {
   const crypto = require('crypto');
-  const expected = Buffer.from(`${APP_USER}:${APP_PASSWORD}`);
+  const COOKIE = 'ball_session';
+  const sessionToken = crypto.createHmac('sha256', APP_PASSWORD)
+    .update(`ball-classifier-session:${APP_USER}`).digest('hex');
+  const safeEqual = (a, b) => {
+    const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+    return x.length === y.length && crypto.timingSafeEqual(x, y);
+  };
+  const credentialsOk = (user, pass) => safeEqual(user, APP_USER) && safeEqual(pass, APP_PASSWORD);
+  const readCookie = req => {
+    const m = (req.headers.cookie || '').match(new RegExp(`(?:^|;\\s*)${COOKIE}=([^;]+)`));
+    return m ? m[1] : '';
+  };
+  const isHttps = req => req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const cookieAttrs = req => isHttps(req)
+    ? 'Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=43200'
+    : 'Path=/; HttpOnly; SameSite=Lax; Max-Age=43200';
+  const loginPage = (error = '') => `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>B-ALL Classifier — Sign in</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0}
+form{background:#1e293b;padding:2rem 2.5rem;border-radius:12px;min-width:280px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+h1{font-size:1.1rem;margin:0 0 1.2rem}label{display:block;font-size:.85rem;margin:.8rem 0 .3rem;color:#94a3b8}
+input{width:100%;box-sizing:border-box;padding:.6rem .7rem;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0}
+button{margin-top:1.2rem;width:100%;padding:.65rem;border:0;border-radius:8px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer}
+.err{color:#f87171;font-size:.85rem;margin-top:.8rem}</style></head><body>
+<form method="post" action="/login"><h1>🧬 B-ALL Classifier</h1>
+<label>User</label><input name="user" value="${APP_USER}" autocomplete="username">
+<label>Password</label><input name="password" type="password" autofocus autocomplete="current-password">
+<button type="submit">Sign in</button>${error ? `<div class="err">${error}</div>` : ''}</form></body></html>`;
+
+  app.get('/login', (req, res) => res.type('html').send(loginPage()));
+  app.post('/login', express.urlencoded({ extended: false }), (req, res) => {
+    if (!credentialsOk(req.body.user, req.body.password)) {
+      return res.status(401).type('html').send(loginPage('Wrong user or password.'));
+    }
+    res.set('Set-Cookie', `${COOKIE}=${sessionToken}; ${cookieAttrs(req)}`);
+    res.redirect('/');
+  });
+  app.get('/logout', (req, res) => {
+    res.set('Set-Cookie', `${COOKIE}=; Path=/; Max-Age=0`);
+    res.redirect('/login');
+  });
   app.use((req, res, next) => {
+    if (safeEqual(readCookie(req), sessionToken)) return next();
     const header = req.headers.authorization || '';
-    const given = header.startsWith('Basic ') ? Buffer.from(header.slice(6), 'base64') : Buffer.alloc(0);
-    const ok = given.length === expected.length && crypto.timingSafeEqual(given, expected);
-    if (ok) return next();
+    if (header.startsWith('Basic ')) {
+      const [user, ...rest] = Buffer.from(header.slice(6), 'base64').toString().split(':');
+      if (credentialsOk(user, rest.join(':'))) return next();
+    }
+    const wantsHtml = (req.headers.accept || '').includes('text/html');
+    if (wantsHtml && req.method === 'GET') return res.redirect('/login');
     res.set('WWW-Authenticate', 'Basic realm="B-ALL Classifier", charset="UTF-8"');
-    res.status(401).send('Authentication required');
+    res.status(401).json({ error: 'Authentication required' });
   });
 }
 
@@ -464,7 +510,7 @@ app.listen(PORT, () => {
   console.log(`\n🧬 B-ALL Classifier → http://localhost:${PORT}`);
   console.log(`   GTF:     ${DEFAULT_GTF}`);
   console.log(`   Scripts: ${SCRIPTS_DIR}`);
-  console.log(`   Auth:    ${APP_PASSWORD ? `basic auth, user "${APP_USER}"` : 'NONE (open to anyone who can reach this port)'}\n`);
+  console.log(`   Auth:    ${APP_PASSWORD ? `login required, user "${APP_USER}"` : 'NONE (open to anyone who can reach this port)'}\n`);
 });
 
 module.exports = app;

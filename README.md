@@ -230,7 +230,7 @@ Environment variables:
 | `PORT`         | `3000`                       | Port the server listens on                |
 | `GTF_FILE`     | `/app/resources/gtf1.txt`    | Default GTF mapping file                  |
 | `ALLSORTS_BIN` | `/opt/allsorts/bin/ALLSorts` | ALLSorts executable used by `bll_v3.R`    |
-| `APP_PASSWORD` | unset                        | If set, every page and download requires HTTP basic auth (user `APP_USER`, default `admin`) |
+| `APP_PASSWORD` | unset                        | If set, every page, API call and download requires a login (user `APP_USER`, default `admin`). Browsers get a login page with a 12-hour session cookie; scripts can use HTTP basic auth. |
 | `RUNS_DIR`     | `/app/runs`                  | Where uploads, outputs and run history are stored |
 
 Run history lives in the `ball-runs` volume. Delete it with `docker volume rm ball-runs` to start fresh.
@@ -239,7 +239,7 @@ Run history lives in the `ball-runs` volume. Delete it with `docker volume rm ba
 
 This repository is ready to run as a Docker Space; the YAML block at the top of this README is the Space configuration. Hugging Face builds the image on its own servers, so nothing needs to be built locally.
 
-1. Create a Space at https://huggingface.co/new-space. Choose **Docker** as the SDK, the free **CPU basic** hardware (2 vCPU, 16 GB RAM), and visibility **Private**. A private Space is visible only to you (or to members of an org you create it under); the sample names, uploads and results are never listed publicly.
+1. Create a Space at https://huggingface.co/new-space. Choose **Docker** as the SDK and the free **CPU basic** hardware (2 vCPU, 16 GB RAM). Public is fine for the code; sample uploads never enter the repository. Choose **Private** if you also want the code hidden.
 2. Push this repository to the Space:
 
 ```bash
@@ -250,7 +250,7 @@ git remote add space https://huggingface.co/spaces/<your-username>/<space-name>
 git push space main            # or master, whichever branch you are on
 ```
 
-3. In the Space's **Settings → Variables and secrets**, add a **secret** named `APP_PASSWORD`. This is mandatory on Hugging Face: the server detects that it is running in a Space and refuses to start without it, so a misconfigured Space shows a runtime error instead of exposing data. Every visitor then has to enter user `admin` and that password. Add `APP_USER` as a variable to change the user name.
+3. In the Space's **Settings → Variables and secrets**, add a **secret** named `APP_PASSWORD`. This is mandatory on Hugging Face: the server detects that it is running in a Space and refuses to start without it, so a misconfigured Space shows a runtime error instead of exposing data. Every visitor then lands on a login page and has to enter user `admin` and that password. Add `APP_USER` as a variable to change the user name. The Space's files (this code and the gene table) are public if the Space is public; uploaded samples and results are not part of the repository and are only reachable through the login. If the app does not load inside the Space page in your browser, open it directly at `https://<username>-<space-name>.hf.space`.
 4. Watch the **Logs** tab. The first build takes roughly 15 to 25 minutes (R packages, then Python). Later builds reuse cached layers.
 
 Notes for the free tier:
