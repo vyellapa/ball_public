@@ -235,6 +235,26 @@ Environment variables:
 
 Run history lives in the `ball-runs` volume. Delete it with `docker volume rm ball-runs` to start fresh.
 
+### Hosting on a VM (Jetstream2, Google Cloud, any VPS)
+
+`docker-compose.prod.yml` runs the classifier behind [Caddy](https://caddyserver.com), which obtains an HTTPS certificate automatically and is the only thing exposed to the internet. Tested layout: Ubuntu 24.04, x86_64, at least 8 GB RAM (a Jetstream2 `m3.quad` or larger), ports 80 and 443 open in the security group.
+
+On the fresh VM:
+
+```bash
+sudo apt-get update && sudo apt-get install -y docker.io docker-compose-v2 git
+sudo usermod -aG docker $USER && newgrp docker
+
+git clone <this repository> ball-classifier && cd ball-classifier
+cp .env.example .env
+nano .env            # set DOMAIN (e.g. <public-ip>.nip.io) and APP_PASSWORD
+
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml logs -f app   # watch the first build, ~15 min
+```
+
+Then open `https://<DOMAIN>`. Run history lives in the `ball-runs` volume and survives restarts and rebuilds. To update the app later: `git pull` and rerun the `up -d --build` command.
+
 ### Hugging Face Spaces
 
 This repository is ready to run as a Docker Space; the YAML block at the top of this README is the Space configuration. Hugging Face builds the image on its own servers, so nothing needs to be built locally.

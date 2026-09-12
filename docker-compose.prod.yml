@@ -1,0 +1,44 @@
+# Production stack for a VM with a public IP (Jetstream2, Google Cloud, any VPS):
+# the classifier behind Caddy, which terminates HTTPS with an automatic
+# Let's Encrypt certificate and forwards to the app. Only ports 80/443 are exposed.
+#
+#   cp .env.example .env      # then set DOMAIN and APP_PASSWORD
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  app:
+    build:
+      context: .
+    image: ball-classifier:latest
+    expose:
+      - "3000"
+    volumes:
+      - ball-runs:/app/runs
+    environment:
+      PORT: "3000"
+      APP_PASSWORD: ${APP_PASSWORD:?Set APP_PASSWORD in .env}
+      APP_USER: ${APP_USER:-admin}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env (e.g. 149.165.1.2.nip.io or classifier.example.org)}
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  ball-runs:
+  caddy-data:
+  caddy-config:
