@@ -354,7 +354,7 @@ app.get('/api/search/:runId/:gene', (req, res) => {
   execFile(
     'Rscript',
     [path.join(SCRIPTS_DIR, 'get_gene_data.R'), runDir, gene],
-    { cwd: runDir },
+    { cwd: runDir, env: { ...process.env, GTF_FILE: DEFAULT_GTF } },
     (error, stdout, stderr) => {
       if (error) {
         return res.status(500).json({
