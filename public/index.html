@@ -43,6 +43,9 @@
   .drop-zone.has-file { border-color:rgba(14,126,110,.42); background:rgba(14,126,110,.08); }
   .drop-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
   .dz-icon { font-size:2rem; margin-bottom:8px; } .dz-label { font-size:1.1375rem; font-weight:600; color:var(--text); margin-bottom:4px; } .dz-hint { font-size:1.0075rem; color:var(--text-muted); } .dz-filename { font-size:.9675rem; color:var(--teal); font-weight:600; margin-top:8px; word-break:break-all; }
+  .dz-example { display:block; width:fit-content; max-width:100%; margin:8px auto 6px; padding:10px 12px; overflow-x:auto; text-align:left; background:var(--surface2); border:1px solid var(--border); border-radius:6px; font-family:var(--font-mono); font-size:.78rem; line-height:1.6; color:var(--text-muted); }
+  .dz-req { display:block; font-size:.92rem; color:var(--text-muted); }
+  .dz-req strong { color:var(--teal); font-weight:600; }
   .section-sep { height:1px; background:var(--border); margin:24px 0; }
   label { display:block; margin-bottom:8px; color:var(--text-muted); }
   input[type=text],input[type=number] { width:100%; border:1px solid var(--border2); background:var(--surface2); border-radius:6px; padding:11px 12px; font-family:var(--font-mono); color:var(--text); outline:none; }
@@ -117,7 +120,12 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-upload"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M12 11v6" /><path d="M9.5 13.5l2.5 -2.5l2.5 2.5" /></svg>
           </div>
           <div class="dz-label">quant.sf &nbsp;<span style="color:var(--error)">*</span></div>
-          <div class="dz-hint">Salmon / Dragen gene-level quantification file</div>
+          <div class="dz-hint">Salmon / Dragen gene-level quantification file (tab-separated)<br>Example format:
+            <pre class="dz-example">Name               Length  EffectiveLength     TPM  NumReads
+ENSG00000223972.5    1152           974.30   0.000      0.00
+ENSG00000227232.5    1347          1206.82  21.135   1207.45</pre>
+            <span class="dz-req"><strong>Name</strong> and <strong>NumReads</strong> are required columns.</span>
+          </div>
           <div class="dz-filename" id="dz-quant-name"></div>
         </div>
       </div>
@@ -130,7 +138,11 @@
           <input type="file" id="gtf-input" name="gtfFile" accept=".txt,.gtf,.csv"
                  onchange="onFileChosen(this,'dz-gtf','dz-gtf-name')">
           <div class="dz-label">Gene name mapping file <span style="color:var(--muted)">(optional – uses server default)</span></div>
-          <div class="dz-hint">Example format:<br><code>gene_id,gene_name</code><br><code>1,ENSG00000223972.5,DDX11L1</code><br><code>2,ENSG00000227232.5,WASH7P</code></div>
+          <div class="dz-hint">Example format:
+            <pre class="dz-example">gene_id,gene_name
+1,ENSG00000223972.5,DDX11L1
+2,ENSG00000227232.5,WASH7P</pre>
+          </div>
           <div class="dz-filename" id="dz-gtf-name"></div>
         </div>
       </div>
