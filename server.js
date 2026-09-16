@@ -207,7 +207,7 @@ h1{font-size:1.1rem;margin:0 0 1.2rem}label{display:block;font-size:.85rem;margi
 input{width:100%;box-sizing:border-box;padding:.6rem .7rem;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0}
 button{margin-top:1.2rem;width:100%;padding:.65rem;border:0;border-radius:8px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer}
 .err{color:#f87171;font-size:.85rem;margin-top:.8rem}</style></head><body>
-<form method="post" action="/login"><h1>🧬 B-ALL Classifier</h1>
+<form method="post" action="/login"><h1>B-ALL Classifier</h1>
 <label>User</label><input name="user" value="${APP_USER}" autocomplete="username">
 <label>Password</label><input name="password" type="password" autofocus autocomplete="current-password">
 <button type="submit">Sign in</button>${error ? `<div class="err">${error}</div>` : ''}</form></body></html>`;

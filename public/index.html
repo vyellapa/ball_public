@@ -129,7 +129,6 @@
           ondrop="onDrop(event,'gtf-input','dz-gtf')">
           <input type="file" id="gtf-input" name="gtfFile" accept=".txt,.gtf,.csv"
                  onchange="onFileChosen(this,'dz-gtf','dz-gtf-name')">
-          <div class="dz-icon">🗺️</div>
           <div class="dz-label">Gene name mapping file <span style="color:var(--muted)">(optional – uses server default)</span></div>
           <div class="dz-hint">Example format:<br><code>gene_id,gene_name</code><br><code>1,ENSG00000223972.5,DDX11L1</code><br><code>2,ENSG00000227232.5,WASH7P</code></div>
           <div class="dz-filename" id="dz-gtf-name"></div>
@@ -164,7 +163,7 @@
 
   <!-- ── Progress Card ── -->
   <section class="card" id="progress-panel">
-    <div class="card-title">📡 Pipeline Progress <span class="badge" id="progress-badge">—</span></div>
+    <div class="card-title">Pipeline Progress <span class="badge" id="progress-badge">—</span></div>
     <div class="status-wrap">
       <div class="status-bar queued" id="status-bar">
         <span id="status-icon">⏳</span>
@@ -177,7 +176,7 @@
 
   <!-- ── Interactive Analysis Card ── -->
   <section class="card" id="interactive-panel">
-    <div class="card-title">🧬 Interactive Analysis</div>
+    <div class="card-title">Interactive Analysis</div>
     <p class="analysis-copy">
       Open dedicated pages for gene-expression search and UMAP projection for the completed run.
     </p>
@@ -254,7 +253,7 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
 
     if (!resp.ok) {
       alert('Upload error: ' + (data.error || resp.statusText));
-      btn.disabled = false; btn.textContent = '🚀 Run Classification Pipeline';
+      btn.disabled = false; btn.textContent = 'Run Classification Pipeline';
       return;
     }
 
@@ -263,11 +262,11 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
     startPolling(data.runId);
 
     btn.textContent = '✔ Submitted';
-    setTimeout(() => { btn.disabled = false; btn.textContent = '🚀 Run Classification Pipeline'; }, 3000);
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Run Classification Pipeline'; }, 3000);
 
   } catch (err) {
     alert('Network error: ' + err.message);
-    btn.disabled = false; btn.textContent = '🚀 Run Classification Pipeline';
+    btn.disabled = false; btn.textContent = 'Run Classification Pipeline';
   }
 });
 
@@ -307,7 +306,7 @@ function renderDownloads(runId, files) {
     a.className = 'dl-btn';
     a.href = `/download/${runId}/${encodeURIComponent(f)}`;
     a.download = f;
-    const icon = f.startsWith('B-ALL_final') ? '🏆' : f.startsWith('B-ALL_merged') ? '🔗' : f.startsWith('MDall') ? '🧠' : '📄';
+    const icon = '📄';
     a.innerHTML = `<span>${icon}</span>${f}`;
     dl.appendChild(a);
   });
