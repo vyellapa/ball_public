@@ -7,6 +7,8 @@ args <- commandArgs(trailingOnly = TRUE)
 indir <- normalizePath(args[1], mustWork = TRUE)
 gene_name <- toupper(args[2])
 app_root <- dirname(dirname(indir))
+script_file <- sub("^--file=", "", grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)[1])
+script_root <- if (!is.na(script_file) && file.exists(script_file)) dirname(dirname(normalizePath(script_file))) else NA_character_
 
 setwd(indir)
 
@@ -83,8 +85,10 @@ resolve_feature_id <- function(gene_name, indir) {
   gtf_candidates <- c(
     file.path(indir, "gtf1.txt"),
     Sys.getenv("GTF_FILE", unset = ""),
+    if (!is.na(script_root)) file.path(script_root, "resources", "gtf1.txt") else "",
     file.path(app_root, "resources", "gtf1.txt")
   )
+  gtf_candidates <- gtf_candidates[nzchar(gtf_candidates)]
   gtf_candidates <- gtf_candidates[nzchar(gtf_candidates)]
 
   for (gtf_path in unique(gtf_candidates)) {

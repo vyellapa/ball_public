@@ -58,9 +58,9 @@
   .page-shell {
     position: relative;
     z-index: 1;
-    max-width: 1240px;
+    max-width: 2400px;
     margin: 0 auto;
-    padding: 0 16px 80px;
+    padding: 0 24px 80px;
   }
 
   /* ── Header bar ── */
@@ -254,7 +254,7 @@
 
   .analysis-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr) 420px;
     align-items: start;
     gap: 20px;
     padding: 18px;
@@ -274,7 +274,7 @@
   .results-header {
     padding: 14px 16px;
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 17px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--teal);
@@ -285,7 +285,7 @@
   .results-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 15px;
+    font-size: 18px;
   }
 
   .results-table th,
@@ -299,7 +299,7 @@
   .results-table th {
     width: 46%;
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 15px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--text-dim);
@@ -307,12 +307,13 @@
 
   .results-table td {
     color: var(--text);
+    overflow-wrap: anywhere;
   }
 
   .results-empty {
     padding: 16px;
     color: var(--text-muted);
-    font-size: 15px;
+    font-size: 18px;
   }
 
   /* ── Status badge ── */
@@ -320,7 +321,7 @@
     margin: 0;
     padding: 12px 28px;
     font-family: var(--font-mono);
-    font-size: 16px;
+    font-size: 18px;
     color: var(--text-muted);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -592,28 +593,30 @@ async function loadUmap() {
     }
 
     const plotHost = document.querySelector('.plot-panel');
-    const plotWidth = Math.max(Math.min((plotHost?.clientWidth || window.innerWidth) - 16, 920), 720);
+    document.getElementById('umap-chart').style.display = 'block';
+    const plotWidth = Math.max((plotHost?.clientWidth || window.innerWidth) - 8, 600);
+    const plotHeight = Math.round(Math.min(Math.max(plotWidth * 0.75, 900), 1300));
 
     Plotly.newPlot('umap-chart', plotData, {
       paper_bgcolor: '#ffffff',
       plot_bgcolor:  '#f7f8fc',
       width: plotWidth,
-      height: 900,
+      height: plotHeight,
       colorway: subtypePalette,
       hovermode: 'closest',
-      font: { family: "'DM Mono', monospace", color: '#4a5568', size: 16 },
+      font: { family: "'DM Mono', monospace", color: '#4a5568', size: 19 },
       title: {
         text: '<b>Reference Cohort Projection</b>',
-        font: { family: "'Syne', sans-serif", color: '#1a202c', size: 24 },
+        font: { family: "'Syne', sans-serif", color: '#1a202c', size: 30 },
         x: 0.02,
         xanchor: 'left',
         pad: { t: 8, b: 8 }
       },
       xaxis: {
-        title: { text: 'uMAP 1', font: { color: '#0e7e6e', size: 16 } },
+        title: { text: 'uMAP 1', font: { color: '#0e7e6e', size: 20 } },
         zeroline: false,
         gridcolor: 'rgba(30,80,160,0.07)',
-        tickfont: { color: '#718096', size: 16 },
+        tickfont: { color: '#718096', size: 19 },
         linecolor: 'rgba(30,80,160,0.15)',
         range: [xMin - xPad, xMax + xPad],
         showspikes: true,
@@ -621,10 +624,10 @@ async function loadUmap() {
         spikethickness: 1
       },
       yaxis: {
-        title: { text: 'uMAP 2', font: { color: '#0e7e6e', size: 16 } },
+        title: { text: 'uMAP 2', font: { color: '#0e7e6e', size: 20 } },
         zeroline: false,
         gridcolor: 'rgba(30,80,160,0.07)',
-        tickfont: { color: '#718096', size: 16 },
+        tickfont: { color: '#718096', size: 19 },
         linecolor: 'rgba(30,80,160,0.15)',
         range: [yMin - yPad, yMax + yPad],
         showspikes: true,
@@ -639,7 +642,7 @@ async function loadUmap() {
         bgcolor: 'rgba(255,255,255,0.95)',
         bordercolor: 'rgba(30,80,160,0.15)',
         borderwidth: 1,
-        font: { size: 16 }
+        font: { size: 19 }
       },
       annotations: query ? [{
         x: query.uMAP_1,
@@ -656,9 +659,9 @@ async function loadUmap() {
         bgcolor: 'rgba(192,57,43,0.95)',
         bordercolor: '#fff',
         borderwidth: 1,
-        font: { color: '#fff', size: 16, family: "'DM Mono', monospace" }
+        font: { color: '#fff', size: 19, family: "'DM Mono', monospace" }
       }] : [],
-      margin: { t: 88, b: 140, l: 56, r: 28 }
+      margin: { t: 100, b: 160, l: 70, r: 32 }
     }, {
       responsive: true,
       displaylogo: false,

@@ -57,9 +57,9 @@
   .page-shell {
     position: relative;
     z-index: 1;
-    max-width: 1560px;
+    max-width: 2400px;
     margin: 0 auto;
-    padding: 0 32px 80px;
+    padding: 0 24px 80px;
   }
 
   /* ── Topbar ── */
@@ -246,7 +246,7 @@
 
   .card-title {
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -284,9 +284,9 @@
     border-radius: 6px;
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 17px;
-    padding: 9px 14px 9px 34px;
-    width: 260px;
+    font-size: 19px;
+    padding: 11px 14px 11px 34px;
+    width: 320px;
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
   }
@@ -303,7 +303,7 @@
     margin: 0;
     padding: 12px 28px;
     font-family: var(--font-mono);
-    font-size: 16px;
+    font-size: 18px;
     color: var(--text-muted);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -344,14 +344,14 @@
 
   .hint-label {
     font-family: var(--font-mono);
-    font-size: 15px;
+    font-size: 17px;
     color: var(--text-dim);
     padding-top: 2px;
   }
 
   .chip {
     font-family: var(--font-mono);
-    font-size: 15px;
+    font-size: 17px;
     color: var(--teal);
     background: var(--teal-dim);
     border: 1px solid rgba(77,217,192,0.2);
@@ -371,7 +371,7 @@
   #plotly-chart {
     padding: 0;
     display: none;
-    min-height: 1025px;
+    min-height: 1150px;
     width: 100%;
   }
 
@@ -383,6 +383,7 @@
     border-radius: 10px;
     background: var(--surface2);
     color: var(--text);
+    font-size: 20px;
   }
 
   .overall-percentile.active {
@@ -611,25 +612,27 @@ async function searchGene() {
     const yMax = Math.max(...allValues, data.sampleValue);
     const yPad = Math.max((yMax - yMin) * 0.05, 0.2);
     const chartEl = document.getElementById('plotly-chart');
+    chartEl.style.display = 'block';
+    const chartWidth = Math.max((chartEl.parentElement?.clientWidth || window.innerWidth) - 8, 600);
 
     Plotly.newPlot('plotly-chart', [...plotData, queryTrace], {
       paper_bgcolor: '#ffffff',
       plot_bgcolor:  '#f7f8fc',
-      width: Math.min((chartEl.parentElement?.clientWidth || window.innerWidth) - 24, 1320),
-      height: 1050,
-      font: { family: "'DM Mono', monospace", color: '#4a5568', size: 16 },
+      width: chartWidth,
+      height: 1150,
+      font: { family: "'DM Mono', monospace", color: '#4a5568', size: 19 },
       colorway: subtypePalette,
       title: {
         text: `<b>${data.gene}</b> expression across reference subtypes`,
-        font: { family: "'Syne', sans-serif", color: '#1a202c', size: 24 },
+        font: { family: "'Syne', sans-serif", color: '#1a202c', size: 30 },
         x: 0.02,
         xanchor: 'left'
       },
       yaxis: {
-        title: { text: 'VST Expression', font: { color: '#0e7e6e', size: 16 } },
+        title: { text: 'VST Expression', font: { color: '#0e7e6e', size: 20 } },
         zeroline: false,
         gridcolor: 'rgba(30,80,160,0.07)',
-        tickfont: { color: '#718096', size: 16 },
+        tickfont: { color: '#718096', size: 19 },
         linecolor: 'rgba(30,80,160,0.15)',
         range: [
           yMin - yPad,
@@ -639,7 +642,7 @@ async function searchGene() {
       xaxis: {
         tickangle: 45,
         automargin: true,
-        tickfont: { color: '#4a5568', size: 15 },
+        tickfont: { color: '#4a5568', size: 18 },
         linecolor: 'rgba(30,80,160,0.15)'
       },
       showlegend: false,
@@ -649,7 +652,7 @@ async function searchGene() {
       hoverlabel: {
         bgcolor: '#ffffff',
         bordercolor: 'rgba(30,80,160,0.18)',
-        font: { family: "'DM Mono', monospace", color: '#1a202c', size: 16 }
+        font: { family: "'DM Mono', monospace", color: '#1a202c', size: 18 }
       },
       shapes: [{
         type: 'line',
@@ -666,7 +669,7 @@ async function searchGene() {
         bordercolor: 'rgba(192,57,43,0.22)',
         borderwidth: 1,
         borderpad: 6,
-        font: { color: '#c0392b', size: 16, family: "'DM Mono', monospace" }
+        font: { color: '#c0392b', size: 19, family: "'DM Mono', monospace" }
       }, {
         x: 0, y: data.sampleValue,
         xref: 'x', yref: 'y',
@@ -675,9 +678,9 @@ async function searchGene() {
         ax: 60, ay: -28,
         bgcolor: '#c0392b',
         borderpad: 4,
-        font: { color: '#fff', size: 16, family: "'DM Mono', monospace" }
+        font: { color: '#fff', size: 19, family: "'DM Mono', monospace" }
       }],
-      margin: { b: 112, t: 74, l: 56, r: 18 }
+      margin: { b: 130, t: 90, l: 70, r: 24 }
     }, {
       responsive: true,
       displaylogo: false,
