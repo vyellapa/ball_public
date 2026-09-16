@@ -382,6 +382,11 @@
   .site-footer { margin-top: 48px; padding: 20px 0 0; border-top: 1px solid var(--border, #d8c9b4); font-family: var(--font-body, system-ui, sans-serif); font-size: 15px; line-height: 1.5; color: var(--muted, var(--text, #6f6254)); text-align: center; }
   .site-footer a { color: var(--teal, var(--accent, #4f46e5)); text-decoration: none; }
   .site-footer a:hover { text-decoration: underline; }
+
+  /* ── Brand + citation ── */
+  .topbar-title { font-family: var(--font-display, sans-serif); font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--teal, #0e7e6e); }
+  .site-footer .footer-cite { max-width: 860px; margin: 0 auto 10px; font-size: 13.5px; line-height: 1.55; color: var(--text-dim, var(--text-muted, #718096)); }
+  .site-footer .footer-contact { margin: 0; }
 </style>
 </head>
 <body>
@@ -390,10 +395,8 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-brand">
-      <img class="topbar-logo" src="/chla-logo.svg" alt="CHLA logo" />
       <div class="topbar-copy">
-        <span class="topbar-label">CHLA | Center for PERSONALISED MEDICINE</span>
-        <span class="topbar-subtitle">B-ALL Classifier</span>
+        <span class="topbar-title">B-ALL Ensemble Classifier</span>
       </div>
     </div>
     <a class="btn btn-outline" href="/">← Back to Pipeline</a>
@@ -432,9 +435,14 @@
   </section>
 
   <footer class="site-footer">
-    Contact <strong>Venkata Yellapantula</strong>
-    (<span data-contact data-user="ball.classifier" data-domain="gmail.com"
-      ><noscript>ball.classifier [at] gmail [dot] com</noscript></span>) for questions or feature requests.
+    <p class="footer-cite">Schmidt, R., K. Miller, A. Kovach, J. Ji, A. Doan, D. Bhojwani,
+      G. Raca, and V. Yellapantula. &ldquo;Validation and Implementation of B Cell Acute
+      Lymphoblastic Leukemia (B-ALL) Subtype Classification by RNA Sequencing (RNA-Seq)
+      Gene Expression Profiling.&rdquo; In Journal of Molecular Diagnostics, vol. 27,
+      no. 11. Elsevier Science Inc, 2025.</p>
+    <p class="footer-contact">Contact <strong>Venkata Yellapantula</strong>
+      (<span data-contact data-user="ball.classifier" data-domain="gmail.com"
+        ><noscript>ball.classifier [at] gmail [dot] com</noscript></span>) for questions or feature requests.</p>
   </footer>
   <script src="/contact.js" defer></script>
 </main>
