@@ -13,6 +13,9 @@ services:
       - ball-runs:/app/runs
     environment:
       PORT: "3000"
+      # Local dev: show the "Previous Runs" picker. Leave this unset on any instance
+      # reachable by more than one person — it lists every sample ever submitted.
+      SHOW_RUN_HISTORY: "true"
       # GTF_FILE: /app/resources/gtf1.txt   # default; mount your own to override
       # APP_PASSWORD: change-me             # uncomment to require a login on every page
     restart: unless-stopped

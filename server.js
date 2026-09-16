@@ -17,6 +17,12 @@ const RUNS_DIR    = process.env.RUNS_DIR || path.join(__dirname, 'runs');
 const DEFAULT_GTF = process.env.GTF_FILE || path.join(__dirname, 'resources', 'gtf1.txt');
 const RUN_MANIFEST = 'run-manifest.json';
 
+// Run history (the "Previous Runs" picker and the /runs endpoint it reads) lists
+// every sample anyone has ever submitted. Off unless SHOW_RUN_HISTORY is set, so a
+// public instance never leaks one user's sample names to the next. Individual runs
+// stay reachable by their own unguessable runId, which is how the upload flow works.
+const SHOW_RUN_HISTORY = /^(1|true|yes|on)$/i.test(process.env.SHOW_RUN_HISTORY || '');
+
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 
 const jobs = {};
@@ -156,6 +162,10 @@ function hydrateJobsFromDisk() {
     jobs[run.runId] = job;
   }
 }
+
+// Container healthcheck. Registered before the password gate so it answers 200
+// without credentials, and it reveals nothing about the runs on disk.
+app.get('/healthz', (req, res) => res.json({ ok: true }));
 
 // Optional password gate. Set APP_PASSWORD (and optionally APP_USER, default "admin")
 // to require a login for every route, including static files and downloads.
@@ -321,6 +331,9 @@ app.get('/status/:runId', (req, res) => {
 });
 
 app.get('/runs', (req, res) => {
+  if (!SHOW_RUN_HISTORY) {
+    return res.status(403).json({ error: 'Run history is disabled on this instance.' });
+  }
   res.json(listStoredRuns());
 });
 
@@ -510,7 +523,8 @@ app.listen(PORT, () => {
   console.log(`\n🧬 B-ALL Classifier → http://localhost:${PORT}`);
   console.log(`   GTF:     ${DEFAULT_GTF}`);
   console.log(`   Scripts: ${SCRIPTS_DIR}`);
-  console.log(`   Auth:    ${APP_PASSWORD ? `login required, user "${APP_USER}"` : 'NONE (open to anyone who can reach this port)'}\n`);
+  console.log(`   Auth:    ${APP_PASSWORD ? `login required, user "${APP_USER}"` : 'NONE (open to anyone who can reach this port)'}`);
+  console.log(`   History: ${SHOW_RUN_HISTORY ? 'visible (every past run is listed to every visitor)' : 'hidden'}\n`);
 });
 
 module.exports = app;

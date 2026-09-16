@@ -115,6 +115,6 @@ VOLUME ["/app/runs"]
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://localhost:3000/runs > /dev/null || exit 1
+  CMD curl -fsS http://localhost:3000/healthz > /dev/null || exit 1
 
 CMD ["node", "server.js"]

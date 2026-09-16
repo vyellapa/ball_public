@@ -17,6 +17,9 @@ services:
       PORT: "3000"
       APP_PASSWORD: ${APP_PASSWORD:?Set APP_PASSWORD in .env}
       APP_USER: ${APP_USER:-admin}
+      # Deliberately absent: SHOW_RUN_HISTORY. On a public host the "Previous Runs"
+      # picker would show every visitor the sample names everyone else submitted.
+      # Each run stays reachable through its own unguessable runId URL.
     restart: unless-stopped
     deploy:
       resources:

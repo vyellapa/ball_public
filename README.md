@@ -160,7 +160,7 @@ Typical output files include:
 flowchart TD
     U[Browser UI<br/>public/index.html<br/>gene-search.html<br/>umap.html] -->|POST /upload| S[Node.js / Express Server<br/>server.js]
     U -->|GET /status/:runId| S
-    U -->|GET /runs| S
+    U -->|GET /runs<br/>only if SHOW_RUN_HISTORY| S
     U -->|GET /download/:runId/:filename| S
     U -->|GET /api/search/:runId/:gene| S
     U -->|GET /api/umap/:runId| S
@@ -232,6 +232,7 @@ Environment variables:
 | `ALLSORTS_BIN` | `/opt/allsorts/bin/ALLSorts` | ALLSorts executable used by `bll_v3.R`    |
 | `APP_PASSWORD` | unset                        | If set, every page, API call and download requires a login (user `APP_USER`, default `admin`). Browsers get a login page with a 12-hour session cookie; scripts can use HTTP basic auth. |
 | `RUNS_DIR`     | `/app/runs`                  | Where uploads, outputs and run history are stored |
+| `SHOW_RUN_HISTORY` | unset (off)              | If set to `true`/`1`/`yes`/`on`, the landing page shows the **Previous Runs** picker and `GET /runs` lists every stored run. Off by default so a shared or public instance never shows one user the sample names submitted by another. |
 
 Run history lives in the `ball-runs` volume. Delete it with `docker volume rm ball-runs` to start fresh.
 
@@ -281,7 +282,9 @@ Notes for the free tier:
 
 ### Before exposing it publicly
 
-Without `APP_PASSWORD` the app has no authentication. Anyone who can reach the port can upload files, list every run, and download every result, including other users' uploads. Put it behind a reverse proxy that enforces login (for example Caddy/nginx with basic auth, or your institution's SSO), terminate TLS there, and only publish port 3000 to that proxy rather than to the internet.
+Without `APP_PASSWORD` the app has no authentication. Anyone who can reach the port can upload files and download results. Put it behind a reverse proxy that enforces login (for example Caddy/nginx with basic auth, or your institution's SSO), terminate TLS there, and only publish port 3000 to that proxy rather than to the internet.
+
+Run history is hidden unless you opt in. `SHOW_RUN_HISTORY` is unset in `docker-compose.prod.yml`, so the **Previous Runs** picker does not render and `GET /runs` returns `403`. Visitors can still reach a run through its own URL — the run ID is a UUIDv4, so those links are unguessable but are not secrets: anyone given one can read that run's outputs. Treat a run URL like a share link.
 
 ## Notes
 

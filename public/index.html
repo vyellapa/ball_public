@@ -400,8 +400,12 @@ function renderSelectedRun(run) {
 
 async function loadHistory() {
   try {
-    const runs = await (await fetch('/runs')).json();
-    if (!runs.length) return;
+    // 403 means the instance has run history disabled (SHOW_RUN_HISTORY unset).
+    // Leave the panel hidden; the current run stays reachable via its runId.
+    const resp = await fetch('/runs');
+    if (!resp.ok) return;
+    const runs = await resp.json();
+    if (!Array.isArray(runs) || !runs.length) return;
     previousRuns = runs;
     document.getElementById('history-panel').style.display = 'block';
     const options = document.getElementById('run-options');
