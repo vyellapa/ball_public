@@ -94,7 +94,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force \
  && node -e "require('express'); require('multer'); require('uuid')"
 
-COPY server.js ./
+COPY server.js auth-log.js ./
 COPY public ./public
 COPY scripts ./scripts
 COPY resources ./resources

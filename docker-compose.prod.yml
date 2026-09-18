@@ -20,6 +20,12 @@ services:
       # Deliberately absent: SHOW_RUN_HISTORY. On a public host the "Previous Runs"
       # picker would show every visitor the sample names everyone else submitted.
       # Each run stays reachable through its own unguessable runId URL.
+      # Login auditing. The log is always written; these only drive the daily email.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-onboarding@resend.dev}
+      DIGEST_HOUR: ${DIGEST_HOUR:-8}
+      GEOLOCATE: ${GEOLOCATE:-true}
     restart: unless-stopped
     deploy:
       resources:

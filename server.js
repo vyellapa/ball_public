@@ -8,9 +8,15 @@ const path       = require('path');
 const fs         = require('fs');
 const { execFile } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
+const { createAuthLog } = require('./auth-log');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+
+// Behind Caddy the socket address is the proxy's, so read the real client IP from
+// X-Forwarded-For. Exactly one hop is trusted: the app port is only exposed to the
+// compose network, so nothing but Caddy can set that header.
+app.set('trust proxy', 1);
 
 const SCRIPTS_DIR = path.join(__dirname, 'scripts');
 const RUNS_DIR    = process.env.RUNS_DIR || path.join(__dirname, 'runs');
@@ -22,6 +28,17 @@ const RUN_MANIFEST = 'run-manifest.json';
 // public instance never leaks one user's sample names to the next. Individual runs
 // stay reachable by their own unguessable runId, which is how the upload flow works.
 const SHOW_RUN_HISTORY = /^(1|true|yes|on)$/i.test(process.env.SHOW_RUN_HISTORY || '');
+
+// Login auditing. Writes to a file in RUNS_DIR — a file, not a directory, so it is
+// never mistaken for a run by listStoredRuns().
+const authLog = createAuthLog({
+  runsDir:    RUNS_DIR,
+  emailTo:    process.env.ALERT_EMAIL_TO || '',
+  resendKey:  process.env.RESEND_API_KEY || '',
+  emailFrom:  process.env.ALERT_EMAIL_FROM || 'onboarding@resend.dev',
+  digestHour: Number(process.env.DIGEST_HOUR || 8),
+  geolocate:  !/^(0|false|no|off)$/i.test(process.env.GEOLOCATE || ''),
+});
 
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 
@@ -214,9 +231,12 @@ button{margin-top:1.2rem;width:100%;padding:.65rem;border:0;border-radius:8px;ba
 
   app.get('/login', (req, res) => res.type('html').send(loginPage()));
   app.post('/login', express.urlencoded({ extended: false }), (req, res) => {
+    const attempt = { ip: req.ip, user: req.body.user, userAgent: req.headers['user-agent'] };
     if (!credentialsOk(req.body.user, req.body.password)) {
+      authLog.record({ ...attempt, outcome: 'failure' });
       return res.status(401).type('html').send(loginPage('Wrong user or password.'));
     }
+    authLog.record({ ...attempt, outcome: 'success' });
     res.set('Set-Cookie', `${COOKIE}=${sessionToken}; ${cookieAttrs(req)}`);
     res.redirect('/');
   });
@@ -524,7 +544,9 @@ app.listen(PORT, () => {
   console.log(`   GTF:     ${DEFAULT_GTF}`);
   console.log(`   Scripts: ${SCRIPTS_DIR}`);
   console.log(`   Auth:    ${APP_PASSWORD ? `login required, user "${APP_USER}"` : 'NONE (open to anyone who can reach this port)'}`);
-  console.log(`   History: ${SHOW_RUN_HISTORY ? 'visible (every past run is listed to every visitor)' : 'hidden'}\n`);
+  console.log(`   History: ${SHOW_RUN_HISTORY ? 'visible (every past run is listed to every visitor)' : 'hidden'}`);
+  authLog.start();
+  console.log('');
 });
 
 module.exports = app;
