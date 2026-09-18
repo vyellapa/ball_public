@@ -233,6 +233,11 @@ Environment variables:
 | `APP_PASSWORD` | unset                        | If set, every page, API call and download requires a login (user `APP_USER`, default `admin`). Browsers get a login page with a 12-hour session cookie; scripts can use HTTP basic auth. |
 | `RUNS_DIR`     | `/app/runs`                  | Where uploads, outputs and run history are stored |
 | `SHOW_RUN_HISTORY` | unset (off)              | If set to `true`/`1`/`yes`/`on`, the landing page shows the **Previous Runs** picker and `GET /runs` lists every stored run. Off by default so a shared or public instance never shows one user the sample names submitted by another. |
+| `RESEND_API_KEY` | unset                      | API key from https://resend.com. Without it the login log is still written, but no digest is emailed. |
+| `ALERT_EMAIL_TO` | unset                      | Where the daily login digest is sent. |
+| `ALERT_EMAIL_FROM` | `onboarding@resend.dev`  | Sender. Resend's test sender only delivers to the address owning the account; override after verifying a domain. |
+| `DIGEST_HOUR`   | `8`                         | Hour (UTC) at which the previous day's digest is sent. |
+| `GEOLOCATE`     | `true`                      | Look up each login IP's city via ip-api.com. Set `false` to keep IPs on your server. |
 
 Run history lives in the `ball-runs` volume. Delete it with `docker volume rm ball-runs` to start fresh.
 
@@ -279,6 +284,29 @@ Notes for the free tier:
 - Storage is ephemeral: run history is wiped whenever the Space restarts or rebuilds. To keep it, add **Persistent storage** (paid, mounted at `/data`) in the Space settings and set the variable `RUNS_DIR=/data/runs` under **Settings → Variables**.
 - A free Space sleeps after 48 hours without traffic; the first visit afterwards takes a minute or two.
 - Uploaded quant.sf files are stored on Hugging Face's servers, visible only through the password-protected app (and to Hugging Face itself). Keep the Space private and upload only de-identified samples.
+
+### Login auditing
+
+Every login attempt — successful or not — is appended to `runs/auth-log.jsonl` as one
+JSON object per line: timestamp, client IP, username tried, user agent and, unless
+`GEOLOCATE=false`, the city, region, country and ISP behind that IP. The app reads the
+real client address from `X-Forwarded-For`, trusting exactly one hop, since only Caddy
+can reach the app port.
+
+Set `RESEND_API_KEY` and `ALERT_EMAIL_TO` to also receive a digest of the previous day's
+activity each morning: every address with its location, success and failure counts, and
+a warning when failed attempts suggest someone is guessing the password.
+
+The log is plain text on the `ball-runs` volume, so you can read it directly:
+
+```bash
+docker compose -f docker-compose.prod.yml exec app tail -20 /app/runs/auth-log.jsonl
+```
+
+Client IP addresses count as personal data in some jurisdictions. Decide how long you
+intend to keep this log, and note that geolocation sends visitors' IPs to a third-party
+service unless you disable it.
+
 
 ### Before exposing it publicly
 
